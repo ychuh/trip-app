@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Okinawa Trip - Starlux Style</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet CSS (Map) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0c0a09; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Hide Scrollbar */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Leaflet Dark Mode Filter */
+        .map-tiles { filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7); }
+        
+        /* Custom Map Marker Pulse */
+        .custom-pin {
+            background-color: #d97706;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(217, 119, 6, 0.8);
+        }
+    </style>
+
+    <!-- React & Babel -->
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+            "lucide-react": "https://esm.sh/lucide-react@0.303.0",
+            "leaflet": "https://esm.sh/leaflet@1.9.4"
+        }
+    }
+    </script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useMemo, useEffect, useRef } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { Plane, Car, MapPin, Hotel, Calendar, CheckSquare, DollarSign, Coffee, ShoppingBag, Sun, Moon, Navigation, Info, ChevronDown, ChevronUp, Map as MapIcon, List, Edit3, Save, Plus, Trash2, Search, Layers, Crosshair, Minus, MoreVertical, Locate } from 'lucide-react';
+        import L from 'leaflet';
+
+        // --- 預定義座標資料庫 (沖繩熱門點) ---
+        const LOCATION_DB = {
+            "那霸機場": [26.2048, 127.6458],
+            "OMO5": [26.2144, 127.6844],
+            "國際通": [26.2144, 127.6844],
+            "波上宮": [26.2205, 127.6712],
+            "玉泉洞": [26.1396, 127.7504],
+            "王國村": [26.1396, 127.7504],
+            "琉球茶房": [26.2186, 127.7155],
+            "奧武島": [26.1296, 127.7724],
+            "美國村": [26.3167, 127.7577],
+            "希爾頓": [26.3251, 127.7543],
+            "萬座毛": [26.5049, 127.8503],
+            "水族館": [26.6943, 127.8779],
+            "美麗海": [26.6943, 127.8779],
+            "燒肉乃我那霸": [26.5922, 127.9777],
+            "瀨底島": [26.6436, 127.8647],
+            "古宇利": [26.7029, 128.0295],
+            "海中道路": [26.3311, 127.9278],
+            "A&W": [26.2335, 127.6854],
+            "新都心": [26.2233, 127.6975],
+            "Outlet": [26.1584, 127.6570],
+            "瀨長島": [26.1753, 127.6424]
+        };
+
+        const OkinawaTripAppUltimate = () => {
+            const [activeTab, setActiveTab] = useState('itinerary');
+            const [isEditing, setIsEditing] = useState(false);
+
+            // --- 1. 數據狀態 ---
+            const [tripData, setTripData] = useState({
+                dates: "2025/11/23 - 11/29",
+                duration: "7 DAYS",
+                flights: {
+                    outbound: { code: "BR186", from: "TPE", to: "OKA", time: "17:35 - 20:10" },
+                    inbound: { code: "BR113", from: "OKA", to: "TPE", time: "11:00 - 11:40" }
+                },
+                carRental: {
+                    period: "11/24 13:00 - 11/28 20:00",
+                    note: "那霸取車 / 機場還車"
+                }
+            });
+
+            const [itinerary, setItinerary] = useState([
+                {
+                    day: 1, date: "11/23", title: "ARRIVAL", highlight: "無車日", color: "border-stone-500", hotel: "OMO5 Okinawa Naha",
+                    schedule: [
+                        { time: "20:10", iconType: "Plane", title: "抵達那霸機場 (BR186)", desc: "入境" },
+                        { time: "21:30", iconType: "Hotel", title: "Check-in OMO5", desc: "那霸市區" }
+                    ]
+                },
+                {
+                    day: 2, date: "11/24", title: "NAHA & SOUTH", highlight: "取車日", color: "border-amber-600", hotel: "OMO5 Okinawa Naha",
+                    schedule: [
+                        { time: "09:00", iconType: "ShoppingBag", title: "國際通 & 波上宮", desc: "市區漫遊" },
+                        { time: "13:00", iconType: "Car", title: "【取車】", desc: "那霸市區" },
+                        { time: "14:30", iconType: "MapPin", title: "玉泉洞", desc: "鐘乳石" },
+                        { time: "18:30", iconType: "Coffee", title: "琉球茶房", desc: "晚餐" }
+                    ]
+                },
+                {
+                    day: 3, date: "11/25", title: "CENTRAL COAST", highlight: "希爾頓 (Free)", color: "border-stone-400", hotel: "Hilton Okinawa Chatan",
+                    schedule: [
+                        { time: "10:00", iconType: "Sun", title: "奧武島", desc: "天婦羅" },
+                        { time: "14:00", iconType: "MapPin", title: "美國村", desc: "摩天輪" },
+                        { time: "15:00", iconType: "Hotel", title: "入住希爾頓北谷", desc: "海景" }
+                    ]
+                },
+                {
+                    day: 4, date: "11/26", title: "NORTH BLUE", highlight: "水族館", color: "border-sky-600", hotel: "Hilton Sesoko Resort",
+                    schedule: [
+                        { time: "10:00", iconType: "MapPin", title: "萬座毛", desc: "象鼻岩" },
+                        { time: "13:30", iconType: "MapPin", title: "美麗海水族館", desc: "鯨鯊" },
+                        { time: "18:00", iconType: "Coffee", title: "燒肉乃我那霸", desc: "名護" },
+                        { time: "20:00", iconType: "Hotel", title: "入住希爾頓瀨底", desc: "度假" }
+                    ]
+                },
+                {
+                    day: 5, date: "11/27", title: "ISLAND DRIVE", highlight: "長途駕駛", color: "border-orange-600", hotel: "OMO5 Okinawa Naha",
+                    schedule: [
+                        { time: "10:00", iconType: "MapPin", title: "古宇利島", desc: "心形岩" },
+                        { time: "14:00", iconType: "Navigation", title: "海中道路", desc: "兜風" },
+                        { time: "18:00", iconType: "Hotel", title: "返回 OMO5", desc: "那霸" }
+                    ]
+                },
+                {
+                    day: 6, date: "11/28", title: "SHOPPING", highlight: "還車日", color: "border-rose-500", hotel: "OMO5 Okinawa Naha",
+                    schedule: [
+                        { time: "10:00", iconType: "ShoppingBag", title: "新都心商圈", desc: "DFS" },
+                        { time: "14:00", iconType: "ShoppingBag", title: "Outlet Ashibinaa", desc: "採購" },
+                        { time: "17:30", iconType: "Sun", title: "瀨長島", desc: "夕陽" },
+                        { time: "20:00", iconType: "CheckSquare", title: "【歸還租車】", desc: "機場旁" }
+                    ]
+                },
+                {
+                    day: 7, date: "11/29", title: "DEPARTURE", highlight: "無車日", color: "border-stone-500", hotel: "Home",
+                    schedule: [
+                        { time: "08:30", iconType: "Plane", title: "那霸機場", desc: "報到" },
+                        { time: "11:00", iconType: "Plane", title: "起飛返台", desc: "BR113" }
+                    ]
+                }
+            ]);
+
+            const [budget, setBudget] = useState([
+                { id: 1, item: "交通費 (租車+油+小黃)", cost: 12540, note: "5天租車 + 無車日" },
+                { id: 2, item: "住宿費 (OMO5 4晚)", cost: 13200, note: "Day 1, 2, 5, 6" },
+                { id: 3, item: "住宿費 (希爾頓瀨底島)", cost: 7700, note: "Day 4 自費" },
+                { id: 4, item: "餐飲費 (7天)", cost: 15400, note: "含大餐與小吃" },
+                { id: 5, item: "門票與活動", cost: 1840, note: "水族館、玉泉洞" },
+            ]);
+
+            const [todoList, setTodoList] = useState([
+                { id: 1, item: "護照 (效期 6 個月以上)", checked: false },
+                { id: 2, item: "日文駕照譯本 (必帶)", checked: false, highlight: true },
+                { id: 3, item: "台灣駕照正本", checked: false },
+                { id: 4, item: "電子機票 / 住宿單", checked: false },
+                { id: 5, item: "日圓現金 / 信用卡", checked: false },
+            ]);
+
+            const hotels = useMemo(() => [
+                { name: "OMO5 Okinawa Naha", nights: "2 晚", dates: "11/23 - 11/25", type: "paid", desc: "市區據點" },
+                { name: "Hilton Okinawa Chatan", nights: "1 晚", dates: "11/25 - 11/26", type: "free", desc: "美國村 (Free)" },
+                { name: "Hilton Sesoko Resort", nights: "1 晚", dates: "11/26 - 11/27", type: "paid", desc: "北部度假" },
+                { name: "OMO5 Okinawa Naha", nights: "2 晚", dates: "11/27 - 11/29", type: "paid", desc: "回歸市區" },
+            ], []);
+
+            // --- CRUD Helpers ---
+            const updateState = (setter, idx, field, value) => {
+                setter(prev => { const arr = [...prev]; arr[idx] = { ...arr[idx], [field]: value }; return arr; });
+            };
+            const addItem = (setter, template) => setter(prev => [...prev, { ...template, id: Date.now() }]);
+            const removeItem = (setter, idx) => setter(prev => prev.filter((_, i) => i !== idx));
+            
+            const addSchedule = (dayIdx) => {
+                const newItin = [...itinerary];
+                newItin[dayIdx].schedule.push({ time: "00:00", iconType: "MapPin", title: "新行程", desc: "" });
+                setItinerary(newItin);
+            };
+            const updateSchedule = (dayIdx, schIdx, field, val) => {
+                const newItin = [...itinerary];
+                newItin[dayIdx].schedule[schIdx][field] = val;
+                setItinerary(newItin);
+            };
+            const removeSchedule = (dayIdx, schIdx) => {
+                const newItin = [...itinerary];
+                newItin[dayIdx].schedule.splice(schIdx, 1);
+                setItinerary(newItin);
+            };
+
+            const totalCost = budget.reduce((acc, curr) => acc + parseInt(curr.cost || 0), 0);
+
+            return (
+                <div className="max-w-md mx-auto bg-stone-950 h-[100dvh] flex flex-col font-sans text-stone-200 overflow-hidden shadow-2xl sm:rounded-3xl border-x border-stone-800 relative selection:bg-amber-900 selection:text-amber-100">
+                    
+                    {/* Ambient Light */}
+                    <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-amber-900/20 to-transparent pointer-events-none z-0"></div>
+
+                    {/* Header */}
+                    <div className="relative z-10 px-5 pt-6 pb-4 bg-gradient-to-b from-stone-900 to-stone-950 border-b border-stone-800 shrink-0">
+                        <div className="flex justify-between items-center mb-4">
+                            <div>
+                                <h1 className="text-2xl font-bold tracking-wide text-white flex items-center gap-2">
+                                    <span className="text-amber-500">✈</span> OKINAWA
+                                </h1>
+                                <div className="flex items-center gap-2 mt-1 text-stone-400 text-xs font-light tracking-wider">
+                                    {tripData.dates} • {tripData.duration}
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setIsEditing(!isEditing)}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all duration-300 text-xs font-bold tracking-widest ${isEditing ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/50' : 'bg-stone-800 text-stone-400 border border-stone-700'}`}
+                            >
+                                {isEditing ? <><Save size={14}/> SAVE</> : <><Edit3 size={14}/> EDIT</>}
+                            </button>
+                        </div>
+                        
+                        {/* Flight Widget */}
+                        <div className="grid grid-cols-3 gap-1 bg-stone-900/50 p-3 rounded-lg border border-stone-800 relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-0.5 h-full bg-amber-600"></div>
+                            <div className="text-center border-r border-stone-800">
+                                <div className="text-xl font-bold text-white">TPE</div>
+                                <div className="text-[10px] text-amber-600 font-mono">17:35</div>
+                            </div>
+                            <div className="flex flex-col items-center justify-center">
+                                <Plane size={14} className="text-stone-500 rotate-90"/>
+                                <span className="text-[9px] text-stone-600 mt-1">BR186</span>
+                            </div>
+                            <div className="text-center border-l border-stone-800">
+                                <div className="text-xl font-bold text-white">OKA</div>
+                                <div className="text-[10px] text-amber-600 font-mono">20:10</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="flex-1 overflow-y-auto scrollbar-hide relative bg-stone-950">
+                        
+                        {activeTab === 'itinerary' && (
+                            <div className="space-y-6 pb-24 p-4">
+                                <div className="flex items-center justify-between bg-stone-900 p-3 rounded-lg border border-stone-800">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-amber-900/20 p-2 rounded text-amber-600"><Car size={16}/></div>
+                                        <div>
+                                            <div className="text-xs font-bold text-stone-300">RENTAL CAR</div>
+                                            <div className="text-[10px] text-stone-500">{tripData.carRental.period}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {itinerary.map((day, dayIdx) => (
+                                    <DayCard 
+                                        key={dayIdx} 
+                                        data={day} 
+                                        dayIdx={dayIdx} 
+                                        isEditing={isEditing} 
+                                        updateDayInfo={(f, v) => updateState(setItinerary, dayIdx, f, v)}
+                                        addSchedule={() => addSchedule(dayIdx)}
+                                        updateSchedule={(sIdx, f, v) => updateSchedule(dayIdx, sIdx, f, v)}
+                                        removeSchedule={(sIdx) => removeSchedule(dayIdx, sIdx)}
+                                    />
+                                ))}
+                            </div>
+                        )}
+
+                        {activeTab === 'map' && (
+                            <LeafletMap itinerary={itinerary} />
+                        )}
+
+                        {activeTab === 'budget' && (
+                            <div className="space-y-6 pb-24 p-4">
+                                <div className="bg-stone-900 p-6 rounded-2xl border border-stone-800 relative overflow-hidden">
+                                    <div className="relative z-10">
+                                        <p className="text-stone-500 text-[10px] tracking-widest uppercase mb-1">ESTIMATED TOTAL</p>
+                                        <p className="text-4xl font-bold text-white tracking-tighter">
+                                            <span className="text-amber-600 text-2xl mr-1">NT$</span>
+                                            {totalCost.toLocaleString()}
+                                        </p>
+                                    </div>
+                                    <div className="absolute right-0 top-0 w-32 h-32 bg-gradient-to-br from-amber-900/20 to-transparent rounded-bl-full"></div>
+                                </div>
+
+                                {isEditing && (
+                                    <button onClick={() => addItem(setBudget, { item: "新項目", cost: 0, note: "" })} className="w-full py-3 rounded-xl border border-dashed border-stone-700 text-stone-500 hover:text-amber-500 flex items-center justify-center gap-2 text-sm">
+                                        <Plus size={16}/> 新增費用
+                                    </button>
+                                )}
+
+                                <div className="space-y-2">
+                                    {budget.map((item, idx) => (
+                                        <div key={item.id} className="bg-stone-900/50 border border-stone-800/50 p-4 rounded-xl flex items-center justify-between">
+                                            <div className="flex-1 mr-4">
+                                                {isEditing ? (
+                                                    <input value={item.item} onChange={(e)=>updateState(setBudget, idx, 'item', e.target.value)} className="bg-transparent border-b border-stone-700 text-sm text-stone-200 w-full mb-1"/>
+                                                ) : (
+                                                    <div className="text-sm font-medium text-stone-300">{item.item}</div>
+                                                )}
+                                                <div className="text-[10px] text-stone-500">{item.note}</div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                {isEditing ? (
+                                                    <input type="number" value={item.cost} onChange={(e)=>updateState(setBudget, idx, 'cost', e.target.value)} className="bg-transparent border-b border-amber-900 text-right font-mono text-amber-500 w-20"/>
+                                                ) : (
+                                                    <div className="font-mono text-amber-500 tracking-wide">${parseInt(item.cost).toLocaleString()}</div>
+                                                )}
+                                                {isEditing && <button onClick={()=>removeItem(setBudget, idx)} className="text-stone-700 hover:text-red-500"><Trash2 size={14}/></button>}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'checklist' && (
+                            <div className="space-y-4 pb-24 p-4">
+                                {isEditing && (
+                                    <button onClick={() => addItem(setTodoList, { item: "新待辦", checked: false })} className="w-full py-2 rounded-lg border border-dashed border-stone-700 text-stone-500 hover:text-amber-500 flex items-center justify-center gap-2 text-xs">
+                                        <Plus size={14}/> 新增待辦
+                                    </button>
+                                )}
+                                {todoList.map((item, idx) => (
+                                    <div key={item.id} onClick={() => !isEditing && updateState(setTodoList, idx, 'checked', !item.checked)} className={`p-3 rounded-lg flex items-center gap-3 transition-all border cursor-pointer ${item.checked ? 'bg-stone-900/30 border-stone-800 opacity-50' : 'bg-stone-900 border-stone-700'}`}>
+                                        <div className={`w-5 h-5 rounded-sm border flex items-center justify-center ${item.checked ? 'bg-amber-600 border-amber-600' : 'border-stone-600 bg-transparent'}`}>
+                                            {item.checked && <CheckSquare size={12} className="text-stone-950" strokeWidth={3} />}
+                                        </div>
+                                        <div className="flex-1">
+                                            {isEditing ? (
+                                                <input value={item.item} onChange={(e)=>updateState(setTodoList, idx, 'item', e.target.value)} onClick={(e)=>e.stopPropagation()} className="bg-transparent border-b border-stone-700 text-stone-300 w-full text-sm py-1"/>
+                                            ) : (
+                                                <span className={`text-sm ${item.checked ? 'line-through text-stone-600' : 'text-stone-300'} ${item.highlight ? 'text-amber-500 font-medium' : ''}`}>{item.item}</span>
+                                            )}
+                                        </div>
+                                        {isEditing && <button onClick={(e)=>{e.stopPropagation(); removeItem(setTodoList, idx)}} className="text-stone-700 hover:text-red-500 p-2"><Trash2 size={14}/></button>}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        
+                         {activeTab === 'hotels' && (
+                           <div className="space-y-4 pb-24 p-4">
+                             {hotels.map((hotel, idx) => (
+                                 <div key={idx} className="bg-stone-900 p-4 rounded-xl border border-stone-800 flex flex-col gap-3 relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-1 h-full bg-amber-600"></div>
+                                    <div className="pl-3 flex justify-between items-start">
+                                      <div>
+                                          <h3 className="font-bold text-stone-200 text-sm tracking-wide">{hotel.name}</h3>
+                                          <span className={`text-[10px] px-2 py-0.5 rounded mt-1 inline-block font-medium ${hotel.type === 'free' ? 'bg-amber-900/30 text-amber-400' : 'bg-stone-800 text-stone-500'}`}>
+                                              {hotel.type === 'free' ? 'FREE STAY' : 'PAID'}
+                                          </span>
+                                      </div>
+                                    </div>
+                                    <div className="pl-3 flex items-center gap-3 text-xs text-stone-500 font-mono">
+                                      <Calendar size={12} className="text-stone-600"/> 
+                                      <span>{hotel.dates}</span>
+                                      <span className="text-stone-700">|</span>
+                                      <span>{hotel.nights}</span>
+                                    </div>
+                                  </div>
+                             ))}
+                           </div>
+                        )}
+                    </div>
+
+                    {/* Bottom Nav */}
+                    <div className="bg-stone-950/90 backdrop-blur-xl border-t border-stone-800 px-6 py-2 pb-6 z-20 absolute bottom-0 w-full shrink-0">
+                        <div className="flex justify-between items-center">
+                            <NavBtn icon={<List size={20}/>} label="PLAN" active={activeTab === 'itinerary'} onClick={() => setActiveTab('itinerary')} />
+                            <NavBtn icon={<MapIcon size={20}/>} label="MAP" active={activeTab === 'map'} onClick={() => setActiveTab('map')} />
+                            <NavBtn icon={<Hotel size={20}/>} label="STAY" active={activeTab === 'hotels'} onClick={() => setActiveTab('hotels')} />
+                            <NavBtn icon={<DollarSign size={20}/>} label="COST" active={activeTab === 'budget'} onClick={() => setActiveTab('budget')} />
+                            <NavBtn icon={<CheckSquare size={20}/>} label="TODO" active={activeTab === 'checklist'} onClick={() => setActiveTab('checklist')} />
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Sub Components ---
+
+        const DayCard = ({ data, dayIdx, isEditing, updateDayInfo, addSchedule, updateSchedule, removeSchedule }) => {
+            const iconMap = { Plane: <Plane size={16}/>, Car: <Car size={16}/>, MapPin: <MapPin size={16}/>, Hotel: <Hotel size={16}/>, Coffee: <Coffee size={16}/>, ShoppingBag: <ShoppingBag size={16}/>, Sun: <Sun size={16}/>, Moon: <Moon size={16}/>, Navigation: <Navigation size={16}/>, CheckSquare: <CheckSquare size={16}/> };
+            
+            return (
+                <div className="relative pl-4">
+                    {dayIdx !== 6 && <div className="absolute left-[23px] top-8 bottom-[-24px] w-px bg-stone-800"></div>}
+                    <div className={`relative bg-stone-900 rounded-xl border ${isEditing ? 'border-stone-700 border-dashed' : 'border-stone-800'} overflow-hidden transition-all`}>
+                        <div className="p-4 flex justify-between items-start border-b border-stone-800/50 bg-stone-900">
+                            <div className="flex gap-3">
+                                <div className={`flex flex-col items-center justify-center w-10 h-10 rounded bg-stone-800 border ${data.color.replace('border-', 'border-')} text-white`}>
+                                    <span className="text-[8px] font-bold text-stone-500">DAY</span>
+                                    <span className="text-lg font-bold leading-none">{dayIdx+1}</span>
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-bold text-stone-200 text-sm">{data.date}</span>
+                                        {isEditing ? <input value={data.title} onChange={(e)=>updateDayInfo('title', e.target.value)} className="bg-black/20 border-b border-amber-900 w-24 text-xs text-amber-500"/> : <span className="text-xs text-amber-600 font-bold tracking-wide uppercase">{data.title}</span>}
+                                    </div>
+                                    <div className="text-[10px] text-stone-500 mt-1 flex items-center gap-1"><Hotel size={10}/> {data.hotel}</div>
+                                </div>
+                            </div>
+                            {isEditing && <button onClick={addSchedule} className="text-xs bg-stone-800 text-stone-400 px-2 py-1 rounded flex items-center gap-1"><Plus size={12}/> Add</button>}
+                        </div>
+                        <div className="p-4 space-y-4">
+                            {data.schedule.map((item, schIdx) => (
+                                <div key={schIdx} className="flex gap-3 relative group">
+                                    <div className="text-[10px] font-mono text-amber-600/80 pt-0.5 w-8 shrink-0">
+                                        {isEditing ? <input value={item.time} onChange={(e)=>updateSchedule(schIdx, 'time', e.target.value)} className="bg-transparent w-full border-b border-stone-700 text-amber-600"/> : item.time}
+                                    </div>
+                                    <div className="flex-1">
+                                        {isEditing ? (
+                                            <div className="flex flex-col gap-1">
+                                                <input value={item.title} onChange={(e)=>updateSchedule(schIdx, 'title', e.target.value)} className="bg-transparent border-b border-stone-700 text-sm text-stone-200 w-full" placeholder="行程"/>
+                                                <input value={item.desc} onChange={(e)=>updateSchedule(schIdx, 'desc', e.target.value)} className="bg-transparent border-b border-stone-800 text-xs text-stone-500 w-full" placeholder="描述"/>
+                                            </div>
+                                        ) : (
+                                            <><div className="text-sm font-medium text-stone-300">{item.title}</div><div className="text-[11px] text-stone-500 font-light">{item.desc}</div></>
+                                        )}
+                                    </div>
+                                    {isEditing && <button onClick={()=>removeSchedule(schIdx)} className="text-stone-700 hover:text-red-500 self-start"><Trash2 size={14}/></button>}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const LeafletMap = ({ itinerary }) => {
+            const mapContainerRef = useRef(null);
+            const mapRef = useRef(null);
+
+            useEffect(() => {
+                if (!mapRef.current && mapContainerRef.current) {
+                    // 初始化地圖 (中心點：沖繩恩納村)
+                    mapRef.current = L.map(mapContainerRef.current, {
+                        zoomControl: false,
+                        attributionControl: false
+                    }).setView([26.48, 127.85], 10);
+
+                    // 使用 CartoDB Dark Matter 圖層 (最接近 Google Map Dark Mode)
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                        maxZoom: 19
+                    }).addTo(mapRef.current);
+                    
+                    L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current);
+                }
+
+                // 繪製標記
+                const map = mapRef.current;
+                // 清除舊標記
+                map.eachLayer((layer) => {
+                    if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+                        map.removeLayer(layer);
+                    }
+                });
+
+                const points = [];
+                const latlngs = [];
+
+                itinerary.forEach((day) => {
+                    day.schedule.forEach((item) => {
+                        // 關鍵字匹配座標
+                        let coord = null;
+                        Object.keys(LOCATION_DB).forEach(key => {
+                            if (item.title.includes(key) || item.desc.includes(key)) {
+                                coord = LOCATION_DB[key];
+                            }
+                        });
+                        
+                        // 如果找不到，嘗試用飯店
+                        if(!coord && day.hotel) {
+                             Object.keys(LOCATION_DB).forEach(key => {
+                                if (day.hotel.includes(key)) coord = LOCATION_DB[key];
+                            });
+                        }
+
+                        if (coord) {
+                            points.push({ coord, title: item.title, day: day.day });
+                            latlngs.push(coord);
+                        }
+                    });
+                });
+
+                // 加入標記
+                points.forEach((pt) => {
+                    L.circleMarker(pt.coord, {
+                        radius: 6,
+                        fillColor: "#d97706",
+                        color: "#fff",
+                        weight: 1,
+                        opacity: 1,
+                        fillOpacity: 0.9
+                    }).addTo(map).bindPopup(`<b style="color:#333">Day ${pt.day}</b><br>${pt.title}`);
+                });
+
+                // 繪製連線
+                if (latlngs.length > 1) {
+                    L.polyline(latlngs, { color: '#fbbf24', weight: 2, dashArray: '5, 10', opacity: 0.6 }).addTo(map);
+                    map.fitBounds(L.polyline(latlngs).getBounds(), { padding: [50, 50] });
+                }
+
+            }, [itinerary]);
+
+            return <div ref={mapContainerRef} className="w-full h-full bg-stone-900 relative z-0"></div>;
+        };
+
+        const NavBtn = ({ icon, label, active, onClick }) => (
+            <button onClick={onClick} className={`flex flex-col items-center gap-1.5 transition-all group ${active ? 'text-amber-500' : 'text-stone-500 hover:text-stone-400'}`}>
+                <div className={`p-1 rounded-xl transition-all ${active ? 'bg-amber-900/20 scale-110' : ''}`}>{icon}</div>
+                <span className="text-[9px] font-bold tracking-widest">{label}</span>
+            </button>
+        );
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<OkinawaTripAppUltimate />);
+    </script>
+</body>
+</html>
