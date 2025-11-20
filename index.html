@@ -3,38 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Okinawa Trip - Starlux Style</title>
+    <title>Okinawa Trip - Starlux Light</title>
     
-    <!-- ✨ 自訂星宇風格 Favicon (黑底金機) ✨ -->
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230c0a09'/%3E%3Cpath d='M50 20 L60 50 L90 60 L90 70 L60 60 L50 90 L40 60 L10 70 L10 60 L40 50 Z' fill='%23d97706'/%3E%3C/svg%3E" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230c0a09'/%3E%3Cpath d='M50 20 L60 50 L90 60 L90 70 L60 60 L50 90 L40 60 L10 70 L10 60 L40 50 Z' fill='%23d97706'/%3E%3C/svg%3E">
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%23d97706'/%3E%3Cpath d='M50 20 L60 50 L90 60 L90 70 L60 60 L50 90 L40 60 L10 70 L10 60 L40 50 Z' fill='%23ffffff'/%3E%3C/svg%3E" type="image/svg+xml">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Leaflet CSS (Map) -->
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0c0a09; }
+        body { font-family: 'Inter', sans-serif; background-color: #f5f5f4; } /* Stone-100 */
         .font-mono { font-family: 'JetBrains Mono', monospace; }
         
-        /* Hide Scrollbar */
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Leaflet Dark Mode Filter */
-        .map-tiles { filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7); }
+        /* Leaflet Styles - Normal Color */
+        .leaflet-container { background: #f5f5f4; }
         
-        /* Custom Map Marker Pulse */
-        .custom-pin {
-            background-color: #d97706;
-            border: 2px solid #fff;
-            border-radius: 50%;
-            box-shadow: 0 0 10px rgba(217, 119, 6, 0.8);
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
         }
     </style>
 
@@ -57,32 +54,18 @@
     <script type="text/babel" data-type="module">
         import React, { useState, useMemo, useEffect, useRef } from 'react';
         import { createRoot } from 'react-dom/client';
-        import { Plane, Car, MapPin, Hotel, Calendar, CheckSquare, DollarSign, Coffee, ShoppingBag, Sun, Moon, Navigation, Info, ChevronDown, ChevronUp, Map as MapIcon, List, Edit3, Save, Plus, Trash2, Search, Layers, Crosshair, Minus, MoreVertical, Locate } from 'lucide-react';
+        import { Plane, Car, MapPin, Hotel, Calendar, CheckSquare, DollarSign, Coffee, ShoppingBag, Sun, Moon, Navigation, Info, ChevronDown, ChevronUp, Map as MapIcon, List, Edit3, Save, Plus, Trash2, Search, Layers, Crosshair, Minus, MoreVertical, Locate, Sparkles, FileText, ArrowRight, Wand2 } from 'lucide-react';
         import L from 'leaflet';
 
-        // --- 預定義座標資料庫 (沖繩熱門點) ---
+        // --- 預定義座標資料庫 ---
         const LOCATION_DB = {
-            "那霸機場": [26.2048, 127.6458],
-            "OMO5": [26.2144, 127.6844],
-            "國際通": [26.2144, 127.6844],
-            "波上宮": [26.2205, 127.6712],
-            "玉泉洞": [26.1396, 127.7504],
-            "王國村": [26.1396, 127.7504],
-            "琉球茶房": [26.2186, 127.7155],
-            "奧武島": [26.1296, 127.7724],
-            "美國村": [26.3167, 127.7577],
-            "希爾頓": [26.3251, 127.7543],
-            "萬座毛": [26.5049, 127.8503],
-            "水族館": [26.6943, 127.8779],
-            "美麗海": [26.6943, 127.8779],
-            "燒肉乃我那霸": [26.5922, 127.9777],
-            "瀨底島": [26.6436, 127.8647],
-            "古宇利": [26.7029, 128.0295],
-            "海中道路": [26.3311, 127.9278],
-            "A&W": [26.2335, 127.6854],
-            "新都心": [26.2233, 127.6975],
-            "Outlet": [26.1584, 127.6570],
-            "瀨長島": [26.1753, 127.6424]
+            "那霸機場": [26.2048, 127.6458], "OMO5": [26.2144, 127.6844], "國際通": [26.2144, 127.6844],
+            "波上宮": [26.2205, 127.6712], "玉泉洞": [26.1396, 127.7504], "王國村": [26.1396, 127.7504],
+            "琉球茶房": [26.2186, 127.7155], "奧武島": [26.1296, 127.7724], "美國村": [26.3167, 127.7577],
+            "希爾頓": [26.3251, 127.7543], "萬座毛": [26.5049, 127.8503], "水族館": [26.6943, 127.8779],
+            "美麗海": [26.6943, 127.8779], "燒肉乃我那霸": [26.5922, 127.9777], "瀨底島": [26.6436, 127.8647],
+            "古宇利": [26.7029, 128.0295], "海中道路": [26.3311, 127.9278], "A&W": [26.2335, 127.6854],
+            "新都心": [26.2233, 127.6975], "Outlet": [26.1584, 127.6570], "瀨長島": [26.1753, 127.6424]
         };
 
         const OkinawaTripAppUltimate = () => {
@@ -97,70 +80,17 @@
                     outbound: { code: "BR186", from: "TPE", to: "OKA", time: "17:35 - 20:10" },
                     inbound: { code: "BR113", from: "OKA", to: "TPE", time: "11:00 - 11:40" }
                 },
-                carRental: {
-                    period: "11/24 13:00 - 11/28 20:00",
-                    note: "那霸取車 / 機場還車"
-                }
+                carRental: { period: "11/24 13:00 - 11/28 20:00", note: "那霸取車 / 機場還車" }
             });
 
             const [itinerary, setItinerary] = useState([
-                {
-                    day: 1, date: "11/23", title: "ARRIVAL", highlight: "無車日", color: "border-stone-500", hotel: "OMO5 Okinawa Naha",
-                    schedule: [
-                        { time: "20:10", iconType: "Plane", title: "抵達那霸機場 (BR186)", desc: "入境" },
-                        { time: "21:30", iconType: "Hotel", title: "Check-in OMO5", desc: "那霸市區" }
-                    ]
-                },
-                {
-                    day: 2, date: "11/24", title: "NAHA & SOUTH", highlight: "取車日", color: "border-amber-600", hotel: "OMO5 Okinawa Naha",
-                    schedule: [
-                        { time: "09:00", iconType: "ShoppingBag", title: "國際通 & 波上宮", desc: "市區漫遊" },
-                        { time: "13:00", iconType: "Car", title: "【取車】", desc: "那霸市區" },
-                        { time: "14:30", iconType: "MapPin", title: "玉泉洞", desc: "鐘乳石" },
-                        { time: "18:30", iconType: "Coffee", title: "琉球茶房", desc: "晚餐" }
-                    ]
-                },
-                {
-                    day: 3, date: "11/25", title: "CENTRAL COAST", highlight: "希爾頓 (Free)", color: "border-stone-400", hotel: "Hilton Okinawa Chatan",
-                    schedule: [
-                        { time: "10:00", iconType: "Sun", title: "奧武島", desc: "天婦羅" },
-                        { time: "14:00", iconType: "MapPin", title: "美國村", desc: "摩天輪" },
-                        { time: "15:00", iconType: "Hotel", title: "入住希爾頓北谷", desc: "海景" }
-                    ]
-                },
-                {
-                    day: 4, date: "11/26", title: "NORTH BLUE", highlight: "水族館", color: "border-sky-600", hotel: "Hilton Sesoko Resort",
-                    schedule: [
-                        { time: "10:00", iconType: "MapPin", title: "萬座毛", desc: "象鼻岩" },
-                        { time: "13:30", iconType: "MapPin", title: "美麗海水族館", desc: "鯨鯊" },
-                        { time: "18:00", iconType: "Coffee", title: "燒肉乃我那霸", desc: "名護" },
-                        { time: "20:00", iconType: "Hotel", title: "入住希爾頓瀨底", desc: "度假" }
-                    ]
-                },
-                {
-                    day: 5, date: "11/27", title: "ISLAND DRIVE", highlight: "長途駕駛", color: "border-orange-600", hotel: "OMO5 Okinawa Naha",
-                    schedule: [
-                        { time: "10:00", iconType: "MapPin", title: "古宇利島", desc: "心形岩" },
-                        { time: "14:00", iconType: "Navigation", title: "海中道路", desc: "兜風" },
-                        { time: "18:00", iconType: "Hotel", title: "返回 OMO5", desc: "那霸" }
-                    ]
-                },
-                {
-                    day: 6, date: "11/28", title: "SHOPPING", highlight: "還車日", color: "border-rose-500", hotel: "OMO5 Okinawa Naha",
-                    schedule: [
-                        { time: "10:00", iconType: "ShoppingBag", title: "新都心商圈", desc: "DFS" },
-                        { time: "14:00", iconType: "ShoppingBag", title: "Outlet Ashibinaa", desc: "採購" },
-                        { time: "17:30", iconType: "Sun", title: "瀨長島", desc: "夕陽" },
-                        { time: "20:00", iconType: "CheckSquare", title: "【歸還租車】", desc: "機場旁" }
-                    ]
-                },
-                {
-                    day: 7, date: "11/29", title: "DEPARTURE", highlight: "無車日", color: "border-stone-500", hotel: "Home",
-                    schedule: [
-                        { time: "08:30", iconType: "Plane", title: "那霸機場", desc: "報到" },
-                        { time: "11:00", iconType: "Plane", title: "起飛返台", desc: "BR113" }
-                    ]
-                }
+                { day: 1, date: "11/23", title: "ARRIVAL", highlight: "無車日", color: "border-stone-400", hotel: "OMO5 Okinawa Naha", schedule: [{ time: "20:10", iconType: "Plane", title: "抵達那霸機場 (BR186)", desc: "入境" }, { time: "21:30", iconType: "Hotel", title: "Check-in OMO5", desc: "那霸市區" }] },
+                { day: 2, date: "11/24", title: "NAHA & SOUTH", highlight: "取車日", color: "border-amber-500", hotel: "OMO5 Okinawa Naha", schedule: [{ time: "09:00", iconType: "ShoppingBag", title: "國際通 & 波上宮", desc: "市區漫遊" }, { time: "13:00", iconType: "Car", title: "【取車】", desc: "那霸市區" }, { time: "14:30", iconType: "MapPin", title: "玉泉洞", desc: "鐘乳石" }, { time: "18:30", iconType: "Coffee", title: "琉球茶房", desc: "晚餐" }] },
+                { day: 3, date: "11/25", title: "CENTRAL COAST", highlight: "希爾頓 (Free)", color: "border-blue-400", hotel: "Hilton Okinawa Chatan", schedule: [{ time: "10:00", iconType: "Sun", title: "奧武島", desc: "天婦羅" }, { time: "14:00", iconType: "MapPin", title: "美國村", desc: "摩天輪" }, { time: "15:00", iconType: "Hotel", title: "入住希爾頓北谷", desc: "海景" }] },
+                { day: 4, date: "11/26", title: "NORTH BLUE", highlight: "水族館", color: "border-cyan-500", hotel: "Hilton Sesoko Resort", schedule: [{ time: "10:00", iconType: "MapPin", title: "萬座毛", desc: "象鼻岩" }, { time: "13:30", iconType: "MapPin", title: "美麗海水族館", desc: "鯨鯊" }, { time: "18:00", iconType: "Coffee", title: "燒肉乃我那霸", desc: "名護" }, { time: "20:00", iconType: "Hotel", title: "入住希爾頓瀨底", desc: "度假" }] },
+                { day: 5, date: "11/27", title: "ISLAND DRIVE", highlight: "長途駕駛", color: "border-orange-500", hotel: "OMO5 Okinawa Naha", schedule: [{ time: "10:00", iconType: "MapPin", title: "古宇利島", desc: "心形岩" }, { time: "14:00", iconType: "Navigation", title: "海中道路", desc: "兜風" }, { time: "18:00", iconType: "Hotel", title: "返回 OMO5", desc: "那霸" }] },
+                { day: 6, date: "11/28", title: "SHOPPING", highlight: "還車日", color: "border-rose-400", hotel: "OMO5 Okinawa Naha", schedule: [{ time: "10:00", iconType: "ShoppingBag", title: "新都心商圈", desc: "DFS" }, { time: "14:00", iconType: "ShoppingBag", title: "Outlet Ashibinaa", desc: "採購" }, { time: "17:30", iconType: "Sun", title: "瀨長島", desc: "夕陽" }, { time: "20:00", iconType: "CheckSquare", title: "【歸還租車】", desc: "機場旁" }] },
+                { day: 7, date: "11/29", title: "DEPARTURE", highlight: "無車日", color: "border-stone-400", hotel: "Home", schedule: [{ time: "08:30", iconType: "Plane", title: "那霸機場", desc: "報到" }, { time: "11:00", iconType: "Plane", title: "起飛返台", desc: "BR113" }] }
             ]);
 
             const [budget, setBudget] = useState([
@@ -179,92 +109,74 @@
                 { id: 5, item: "日圓現金 / 信用卡", checked: false },
             ]);
 
-            const hotels = useMemo(() => [
+            const [hotels, setHotels] = useState([
                 { name: "OMO5 Okinawa Naha", nights: "2 晚", dates: "11/23 - 11/25", type: "paid", desc: "市區據點" },
                 { name: "Hilton Okinawa Chatan", nights: "1 晚", dates: "11/25 - 11/26", type: "free", desc: "美國村 (Free)" },
                 { name: "Hilton Sesoko Resort", nights: "1 晚", dates: "11/26 - 11/27", type: "paid", desc: "北部度假" },
                 { name: "OMO5 Okinawa Naha", nights: "2 晚", dates: "11/27 - 11/29", type: "paid", desc: "回歸市區" },
-            ], []);
+            ]);
 
             // --- CRUD Helpers ---
-            const updateState = (setter, idx, field, value) => {
-                setter(prev => { const arr = [...prev]; arr[idx] = { ...arr[idx], [field]: value }; return arr; });
-            };
+            const updateState = (setter, idx, field, value) => setter(prev => { const arr = [...prev]; arr[idx] = { ...arr[idx], [field]: value }; return arr; });
             const addItem = (setter, template) => setter(prev => [...prev, { ...template, id: Date.now() }]);
             const removeItem = (setter, idx) => setter(prev => prev.filter((_, i) => i !== idx));
-            
-            const addSchedule = (dayIdx) => {
-                const newItin = [...itinerary];
-                newItin[dayIdx].schedule.push({ time: "00:00", iconType: "MapPin", title: "新行程", desc: "" });
-                setItinerary(newItin);
-            };
-            const updateSchedule = (dayIdx, schIdx, field, val) => {
-                const newItin = [...itinerary];
-                newItin[dayIdx].schedule[schIdx][field] = val;
-                setItinerary(newItin);
-            };
-            const removeSchedule = (dayIdx, schIdx) => {
-                const newItin = [...itinerary];
-                newItin[dayIdx].schedule.splice(schIdx, 1);
-                setItinerary(newItin);
-            };
+            const addSchedule = (dayIdx) => { const newItin = [...itinerary]; newItin[dayIdx].schedule.push({ time: "00:00", iconType: "MapPin", title: "新行程", desc: "" }); setItinerary(newItin); };
+            const updateSchedule = (dayIdx, schIdx, field, val) => { const newItin = [...itinerary]; newItin[dayIdx].schedule[schIdx][field] = val; setItinerary(newItin); };
+            const removeSchedule = (dayIdx, schIdx) => { const newItin = [...itinerary]; newItin[dayIdx].schedule.splice(schIdx, 1); setItinerary(newItin); };
 
             const totalCost = budget.reduce((acc, curr) => acc + parseInt(curr.cost || 0), 0);
 
             return (
-                <div className="max-w-md mx-auto bg-stone-950 h-[100dvh] flex flex-col font-sans text-stone-200 overflow-hidden shadow-2xl sm:rounded-3xl border-x border-stone-800 relative selection:bg-amber-900 selection:text-amber-100">
+                <div className="max-w-md mx-auto bg-stone-50 h-[100dvh] flex flex-col font-sans text-stone-800 overflow-hidden shadow-2xl sm:rounded-3xl border-x border-stone-200 relative selection:bg-amber-200 selection:text-amber-900">
                     
-                    {/* Ambient Light */}
-                    <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-amber-900/20 to-transparent pointer-events-none z-0"></div>
-
                     {/* Header */}
-                    <div className="relative z-10 px-5 pt-6 pb-4 bg-gradient-to-b from-stone-900 to-stone-950 border-b border-stone-800 shrink-0">
-                        <div className="flex justify-between items-center mb-4">
+                    <div className="relative z-10 px-6 pt-8 pb-6 bg-white border-b border-stone-200 shrink-0 shadow-sm">
+                        <div className="flex justify-between items-center mb-5">
                             <div>
-                                <h1 className="text-2xl font-bold tracking-wide text-white flex items-center gap-2">
+                                <h1 className="text-3xl font-bold tracking-tight text-stone-800 flex items-center gap-2">
                                     <span className="text-amber-500">✈</span> OKINAWA
                                 </h1>
-                                <div className="flex items-center gap-2 mt-1 text-stone-400 text-xs font-light tracking-wider">
-                                    {tripData.dates} • {tripData.duration}
+                                <div className="flex items-center gap-3 mt-1 text-stone-500 text-sm font-medium tracking-wide">
+                                    {tripData.dates} <span className="text-stone-300">|</span> {tripData.duration}
                                 </div>
                             </div>
                             <button 
                                 onClick={() => setIsEditing(!isEditing)}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all duration-300 text-xs font-bold tracking-widest ${isEditing ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/50' : 'bg-stone-800 text-stone-400 border border-stone-700'}`}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 text-xs font-bold tracking-widest shadow-sm ${isEditing ? 'bg-amber-500 text-white shadow-amber-200' : 'bg-white text-stone-500 border border-stone-200 hover:bg-stone-50'}`}
                             >
-                                {isEditing ? <><Save size={14}/> SAVE</> : <><Edit3 size={14}/> EDIT</>}
+                                {isEditing ? <><Save size={16}/> SAVE</> : <><Edit3 size={16}/> EDIT</>}
                             </button>
                         </div>
                         
                         {/* Flight Widget */}
-                        <div className="grid grid-cols-3 gap-1 bg-stone-900/50 p-3 rounded-lg border border-stone-800 relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-0.5 h-full bg-amber-600"></div>
-                            <div className="text-center border-r border-stone-800">
-                                <div className="text-xl font-bold text-white">TPE</div>
-                                <div className="text-[10px] text-amber-600 font-mono">17:35</div>
+                        <div className="grid grid-cols-3 gap-1 bg-stone-50 p-4 rounded-xl border border-stone-200 relative overflow-hidden shadow-inner">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
+                            <div className="text-center border-r border-stone-200">
+                                <div className="text-2xl font-bold text-stone-800 tracking-tight">TPE</div>
+                                <div className="text-xs text-amber-600 font-mono font-bold">17:35</div>
                             </div>
-                            <div className="flex flex-col items-center justify-center">
-                                <Plane size={14} className="text-stone-500 rotate-90"/>
-                                <span className="text-[9px] text-stone-600 mt-1">BR186</span>
+                            <div className="flex flex-col items-center justify-center text-stone-400">
+                                <Plane size={18} className="rotate-90 mb-1"/>
+                                <span className="text-[10px] font-bold tracking-wider">BR186</span>
                             </div>
-                            <div className="text-center border-l border-stone-800">
-                                <div className="text-xl font-bold text-white">OKA</div>
-                                <div className="text-[10px] text-amber-600 font-mono">20:10</div>
+                            <div className="text-center border-l border-stone-200">
+                                <div className="text-2xl font-bold text-stone-800 tracking-tight">OKA</div>
+                                <div className="text-xs text-amber-600 font-mono font-bold">20:10</div>
                             </div>
                         </div>
                     </div>
 
                     {/* Main Content */}
-                    <div className="flex-1 overflow-y-auto scrollbar-hide relative bg-stone-950">
+                    <div className="flex-1 overflow-y-auto scrollbar-hide relative bg-stone-50">
                         
                         {activeTab === 'itinerary' && (
-                            <div className="space-y-6 pb-24 p-4">
-                                <div className="flex items-center justify-between bg-stone-900 p-3 rounded-lg border border-stone-800">
-                                    <div className="flex items-center gap-3">
-                                        <div className="bg-amber-900/20 p-2 rounded text-amber-600"><Car size={16}/></div>
+                            <div className="space-y-8 pb-28 p-5">
+                                <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
+                                    <div className="flex items-center gap-4">
+                                        <div className="bg-amber-50 p-2.5 rounded-lg text-amber-600"><Car size={20}/></div>
                                         <div>
-                                            <div className="text-xs font-bold text-stone-300">RENTAL CAR</div>
-                                            <div className="text-[10px] text-stone-500">{tripData.carRental.period}</div>
+                                            <div className="text-sm font-bold text-stone-700">RENTAL CAR</div>
+                                            <div className="text-xs text-stone-500 mt-0.5">{tripData.carRental.period}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -284,47 +196,45 @@
                             </div>
                         )}
 
-                        {activeTab === 'map' && (
-                            <LeafletMap itinerary={itinerary} />
-                        )}
+                        {activeTab === 'map' && <LeafletMap itinerary={itinerary} />}
 
                         {activeTab === 'budget' && (
-                            <div className="space-y-6 pb-24 p-4">
-                                <div className="bg-stone-900 p-6 rounded-2xl border border-stone-800 relative overflow-hidden">
+                            <div className="space-y-6 pb-28 p-5">
+                                <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm relative overflow-hidden">
                                     <div className="relative z-10">
-                                        <p className="text-stone-500 text-[10px] tracking-widest uppercase mb-1">ESTIMATED TOTAL</p>
-                                        <p className="text-4xl font-bold text-white tracking-tighter">
-                                            <span className="text-amber-600 text-2xl mr-1">NT$</span>
+                                        <p className="text-stone-400 text-xs tracking-widest uppercase mb-2 font-bold">ESTIMATED TOTAL</p>
+                                        <p className="text-5xl font-bold text-stone-800 tracking-tighter">
+                                            <span className="text-amber-500 text-2xl mr-1 font-medium">NT$</span>
                                             {totalCost.toLocaleString()}
                                         </p>
                                     </div>
-                                    <div className="absolute right-0 top-0 w-32 h-32 bg-gradient-to-br from-amber-900/20 to-transparent rounded-bl-full"></div>
+                                    <div className="absolute right-0 top-0 w-32 h-32 bg-gradient-to-br from-amber-100 to-transparent rounded-bl-full opacity-60"></div>
                                 </div>
 
                                 {isEditing && (
-                                    <button onClick={() => addItem(setBudget, { item: "新項目", cost: 0, note: "" })} className="w-full py-3 rounded-xl border border-dashed border-stone-700 text-stone-500 hover:text-amber-500 flex items-center justify-center gap-2 text-sm">
-                                        <Plus size={16}/> 新增費用
+                                    <button onClick={() => addItem(setBudget, { item: "新項目", cost: 0, note: "" })} className="w-full py-3 rounded-xl border-2 border-dashed border-stone-300 text-stone-500 hover:text-amber-600 hover:border-amber-400 hover:bg-amber-50 transition-all flex items-center justify-center gap-2 text-sm font-bold">
+                                        <Plus size={18}/> 新增費用
                                     </button>
                                 )}
 
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     {budget.map((item, idx) => (
-                                        <div key={item.id} className="bg-stone-900/50 border border-stone-800/50 p-4 rounded-xl flex items-center justify-between">
+                                        <div key={item.id} className="bg-white border border-stone-200 p-4 rounded-xl flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
                                             <div className="flex-1 mr-4">
                                                 {isEditing ? (
-                                                    <input value={item.item} onChange={(e)=>updateState(setBudget, idx, 'item', e.target.value)} className="bg-transparent border-b border-stone-700 text-sm text-stone-200 w-full mb-1"/>
+                                                    <input value={item.item} onChange={(e)=>updateState(setBudget, idx, 'item', e.target.value)} className="bg-stone-50 border-b border-stone-300 text-base text-stone-800 w-full mb-1 p-1 rounded"/>
                                                 ) : (
-                                                    <div className="text-sm font-medium text-stone-300">{item.item}</div>
+                                                    <div className="text-base font-bold text-stone-700">{item.item}</div>
                                                 )}
-                                                <div className="text-[10px] text-stone-500">{item.note}</div>
+                                                <div className="text-xs text-stone-400 mt-0.5">{item.note}</div>
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 {isEditing ? (
-                                                    <input type="number" value={item.cost} onChange={(e)=>updateState(setBudget, idx, 'cost', e.target.value)} className="bg-transparent border-b border-amber-900 text-right font-mono text-amber-500 w-20"/>
+                                                    <input type="number" value={item.cost} onChange={(e)=>updateState(setBudget, idx, 'cost', e.target.value)} className="bg-stone-50 border-b border-amber-500 text-right font-mono text-amber-600 w-24 p-1 rounded"/>
                                                 ) : (
-                                                    <div className="font-mono text-amber-500 tracking-wide">${parseInt(item.cost).toLocaleString()}</div>
+                                                    <div className="font-mono text-lg text-amber-600 font-bold tracking-tight">${parseInt(item.cost).toLocaleString()}</div>
                                                 )}
-                                                {isEditing && <button onClick={()=>removeItem(setBudget, idx)} className="text-stone-700 hover:text-red-500"><Trash2 size={14}/></button>}
+                                                {isEditing && <button onClick={()=>removeItem(setBudget, idx)} className="text-stone-400 hover:text-red-500 p-1"><Trash2 size={16}/></button>}
                                             </div>
                                         </div>
                                     ))}
@@ -333,47 +243,54 @@
                         )}
 
                         {activeTab === 'checklist' && (
-                            <div className="space-y-4 pb-24 p-4">
+                            <div className="space-y-4 pb-28 p-5">
                                 {isEditing && (
-                                    <button onClick={() => addItem(setTodoList, { item: "新待辦", checked: false })} className="w-full py-2 rounded-lg border border-dashed border-stone-700 text-stone-500 hover:text-amber-500 flex items-center justify-center gap-2 text-xs">
-                                        <Plus size={14}/> 新增待辦
+                                    <button onClick={() => addItem(setTodoList, { item: "新待辦", checked: false })} className="w-full py-3 rounded-xl border-2 border-dashed border-stone-300 text-stone-500 hover:text-amber-600 hover:border-amber-400 hover:bg-amber-50 transition-all flex items-center justify-center gap-2 text-sm font-bold">
+                                        <Plus size={18}/> 新增待辦
                                     </button>
                                 )}
                                 {todoList.map((item, idx) => (
-                                    <div key={item.id} onClick={() => !isEditing && updateState(setTodoList, idx, 'checked', !item.checked)} className={`p-3 rounded-lg flex items-center gap-3 transition-all border cursor-pointer ${item.checked ? 'bg-stone-900/30 border-stone-800 opacity-50' : 'bg-stone-900 border-stone-700'}`}>
-                                        <div className={`w-5 h-5 rounded-sm border flex items-center justify-center ${item.checked ? 'bg-amber-600 border-amber-600' : 'border-stone-600 bg-transparent'}`}>
-                                            {item.checked && <CheckSquare size={12} className="text-stone-950" strokeWidth={3} />}
+                                    <div key={item.id} onClick={() => !isEditing && updateState(setTodoList, idx, 'checked', !item.checked)} className={`p-4 rounded-xl flex items-center gap-4 transition-all border cursor-pointer shadow-sm ${item.checked ? 'bg-stone-100 border-stone-200 opacity-60' : 'bg-white border-stone-200 hover:border-amber-400'}`}>
+                                        <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors ${item.checked ? 'bg-amber-500 border-amber-500' : 'border-stone-300 bg-white'}`}>
+                                            {item.checked && <CheckSquare size={14} className="text-white" strokeWidth={4} />}
                                         </div>
                                         <div className="flex-1">
                                             {isEditing ? (
-                                                <input value={item.item} onChange={(e)=>updateState(setTodoList, idx, 'item', e.target.value)} onClick={(e)=>e.stopPropagation()} className="bg-transparent border-b border-stone-700 text-stone-300 w-full text-sm py-1"/>
+                                                <input value={item.item} onChange={(e)=>updateState(setTodoList, idx, 'item', e.target.value)} onClick={(e)=>e.stopPropagation()} className="bg-stone-50 border-b border-stone-300 text-stone-800 w-full text-base p-1 rounded"/>
                                             ) : (
-                                                <span className={`text-sm ${item.checked ? 'line-through text-stone-600' : 'text-stone-300'} ${item.highlight ? 'text-amber-500 font-medium' : ''}`}>{item.item}</span>
+                                                <span className={`text-base font-medium ${item.checked ? 'line-through text-stone-400' : 'text-stone-700'} ${item.highlight ? 'text-amber-600' : ''}`}>{item.item}</span>
                                             )}
                                         </div>
-                                        {isEditing && <button onClick={(e)=>{e.stopPropagation(); removeItem(setTodoList, idx)}} className="text-stone-700 hover:text-red-500 p-2"><Trash2 size={14}/></button>}
+                                        {isEditing && <button onClick={(e)=>{e.stopPropagation(); removeItem(setTodoList, idx)}} className="text-stone-400 hover:text-red-500 p-2"><Trash2 size={16}/></button>}
                                     </div>
                                 ))}
                             </div>
                         )}
                         
+                        {activeTab === 'prompt' && (
+                            <PromptTab 
+                                setItinerary={setItinerary}
+                                setActiveTab={setActiveTab}
+                            />
+                        )}
+
                          {activeTab === 'hotels' && (
-                           <div className="space-y-4 pb-24 p-4">
+                           <div className="space-y-5 pb-28 p-5">
                              {hotels.map((hotel, idx) => (
-                                 <div key={idx} className="bg-stone-900 p-4 rounded-xl border border-stone-800 flex flex-col gap-3 relative overflow-hidden">
-                                    <div className="absolute top-0 left-0 w-1 h-full bg-amber-600"></div>
-                                    <div className="pl-3 flex justify-between items-start">
+                                 <div key={idx} className="bg-white p-5 rounded-2xl border border-stone-200 flex flex-col gap-3 relative overflow-hidden shadow-sm hover:shadow-md transition-all">
+                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500"></div>
+                                    <div className="pl-4 flex justify-between items-start">
                                       <div>
-                                          <h3 className="font-bold text-stone-200 text-sm tracking-wide">{hotel.name}</h3>
-                                          <span className={`text-[10px] px-2 py-0.5 rounded mt-1 inline-block font-medium ${hotel.type === 'free' ? 'bg-amber-900/30 text-amber-400' : 'bg-stone-800 text-stone-500'}`}>
-                                              {hotel.type === 'free' ? 'FREE STAY' : 'PAID'}
+                                          <h3 className="font-bold text-stone-800 text-lg tracking-tight">{hotel.name}</h3>
+                                          <span className={`text-[11px] px-2.5 py-1 rounded-md mt-2 inline-block font-bold tracking-wide ${hotel.type === 'free' ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-500'}`}>
+                                              {hotel.type === 'free' ? 'FREE STAY' : 'PAID STAY'}
                                           </span>
                                       </div>
                                     </div>
-                                    <div className="pl-3 flex items-center gap-3 text-xs text-stone-500 font-mono">
-                                      <Calendar size={12} className="text-stone-600"/> 
+                                    <div className="pl-4 flex items-center gap-3 text-sm text-stone-500 font-mono mt-1">
+                                      <Calendar size={14} className="text-stone-400"/> 
                                       <span>{hotel.dates}</span>
-                                      <span className="text-stone-700">|</span>
+                                      <span className="text-stone-300">|</span>
                                       <span>{hotel.nights}</span>
                                     </div>
                                   </div>
@@ -383,61 +300,206 @@
                     </div>
 
                     {/* Bottom Nav */}
-                    <div className="bg-stone-950/90 backdrop-blur-xl border-t border-stone-800 px-6 py-2 pb-6 z-20 absolute bottom-0 w-full shrink-0">
+                    <div className="glass-panel px-6 py-3 pb-8 z-20 absolute bottom-0 w-full shrink-0 shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
                         <div className="flex justify-between items-center">
-                            <NavBtn icon={<List size={20}/>} label="PLAN" active={activeTab === 'itinerary'} onClick={() => setActiveTab('itinerary')} />
-                            <NavBtn icon={<MapIcon size={20}/>} label="MAP" active={activeTab === 'map'} onClick={() => setActiveTab('map')} />
-                            <NavBtn icon={<Hotel size={20}/>} label="STAY" active={activeTab === 'hotels'} onClick={() => setActiveTab('hotels')} />
-                            <NavBtn icon={<DollarSign size={20}/>} label="COST" active={activeTab === 'budget'} onClick={() => setActiveTab('budget')} />
-                            <NavBtn icon={<CheckSquare size={20}/>} label="TODO" active={activeTab === 'checklist'} onClick={() => setActiveTab('checklist')} />
+                            <NavBtn icon={<List size={22}/>} label="PLAN" active={activeTab === 'itinerary'} onClick={() => setActiveTab('itinerary')} />
+                            <NavBtn icon={<MapIcon size={22}/>} label="MAP" active={activeTab === 'map'} onClick={() => setActiveTab('map')} />
+                            <NavBtn icon={<Wand2 size={22}/>} label="AI" active={activeTab === 'prompt'} onClick={() => setActiveTab('prompt')} />
+                            <NavBtn icon={<DollarSign size={22}/>} label="COST" active={activeTab === 'budget'} onClick={() => setActiveTab('budget')} />
+                            <NavBtn icon={<CheckSquare size={22}/>} label="CHECK" active={activeTab === 'checklist'} onClick={() => setActiveTab('checklist')} />
                         </div>
                     </div>
                 </div>
             );
         };
 
-        // --- Sub Components ---
+        // --- Smart Prompt Tab Component ---
+        const PromptTab = ({ setItinerary, setActiveTab }) => {
+            const [textInput, setTextInput] = useState("");
+            const [status, setStatus] = useState("");
+
+            const demoText = `Day 1
+            20:10 抵達那霸
+            21:00 領取租車
+            22:00 國際通吃拉麵
+
+            Day 2
+            09:00 波上宮參拜
+            12:00 港川外人住宅吃甜點
+            15:00 美國村逛街
+            18:00 日落海灘
+
+            Day 3
+            10:00 萬座毛
+            12:00 古宇利島蝦蝦飯
+            14:30 美麗海水族館
+            19:00 燒肉晚餐`;
+
+            const parseNaturalText = (text) => {
+                const lines = text.split('\n');
+                const newItinerary = [];
+                let currentDay = null;
+                let dayCount = 0;
+
+                const colors = ["border-stone-400", "border-amber-500", "border-blue-400", "border-cyan-500", "border-orange-500", "border-rose-400", "border-purple-400"];
+
+                lines.forEach(line => {
+                    const trimmed = line.trim();
+                    if (!trimmed) return;
+
+                    // 偵測日期標題 (Day X, 第X天)
+                    const dayMatch = trimmed.match(/Day\s*(\d+)|第\s*(\d+)\s*天/i);
+                    if (dayMatch) {
+                        if (currentDay) newItinerary.push(currentDay);
+                        dayCount++;
+                        currentDay = {
+                            day: dayCount,
+                            date: `Day ${dayCount}`,
+                            title: "New Plan",
+                            highlight: "AI Generated",
+                            color: colors[(dayCount - 1) % colors.length],
+                            hotel: "Hotel TBD",
+                            schedule: []
+                        };
+                    } else if (currentDay) {
+                        // 偵測時間與內容 (10:00 做什麼事)
+                        const timeMatch = trimmed.match(/(\d{1,2}:\d{2})/);
+                        if (timeMatch) {
+                            const time = timeMatch[1];
+                            let content = trimmed.replace(time, '').trim().replace(/^[:\-]\s*/, '');
+                            let icon = "MapPin"; // 預設
+                            
+                            // 簡單的關鍵字圖示判斷
+                            if (content.includes("機") || content.includes("飛")) icon = "Plane";
+                            else if (content.includes("吃") || content.includes("餐") || content.includes("飯")) icon = "Coffee";
+                            else if (content.includes("買") || content.includes("街") || content.includes("店")) icon = "ShoppingBag";
+                            else if (content.includes("海") || content.includes("島") || content.includes("灘")) icon = "Sun";
+                            else if (content.includes("車") || content.includes("駕")) icon = "Car";
+                            else if (content.includes("住") || content.includes("店") || content.includes("Check")) icon = "Hotel";
+
+                            currentDay.schedule.push({
+                                time: time,
+                                iconType: icon,
+                                title: content,
+                                desc: "AI 自動匯入"
+                            });
+                        }
+                    }
+                });
+                if (currentDay) newItinerary.push(currentDay);
+                return newItinerary;
+            };
+
+            const handleApply = () => {
+                if (!textInput.trim()) {
+                    setStatus("❌ 請輸入行程文字");
+                    return;
+                }
+                const result = parseNaturalText(textInput);
+                if (result.length > 0) {
+                    setItinerary(result);
+                    setStatus("✅ 匯入成功！正在跳轉...");
+                    setTimeout(() => setActiveTab('itinerary'), 1000);
+                } else {
+                    setStatus("⚠️ 無法辨識，請包含 'Day 1' 與 '10:00' 格式");
+                }
+            };
+
+            return (
+                <div className="p-6 pb-24 space-y-6">
+                    <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm">
+                        <h2 className="text-xl font-bold text-stone-800 mb-2 flex items-center gap-2">
+                            <Sparkles className="text-amber-500" size={20}/> AI 智能匯入
+                        </h2>
+                        <p className="text-xs text-stone-500 mb-4">
+                            將您與 Gemini/ChatGPT 討論的「純文字行程」直接貼上，App 會自動分析並轉換成精美的行程卡片。
+                        </p>
+                        
+                        <div className="flex gap-3 mb-4">
+                             <button onClick={() => setTextInput(demoText)} className="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-3 py-2 rounded-lg font-bold hover:bg-amber-100 transition-colors">
+                                試用範例 (按此載入)
+                             </button>
+                        </div>
+
+                        <textarea 
+                            value={textInput}
+                            onChange={(e) => setTextInput(e.target.value)}
+                            className="w-full h-64 p-4 text-xs font-mono bg-stone-50 border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none mb-4 text-stone-600 leading-relaxed"
+                            placeholder="請貼上行程文字...&#10;例如：&#10;Day 1&#10;10:00 抵達機場&#10;12:00 吃拉麵..."
+                        ></textarea>
+                        
+                        <div className="flex items-center justify-between">
+                            <span className={`text-xs font-bold ${status.includes('❌') || status.includes('⚠️') ? 'text-red-500' : 'text-green-600'}`}>
+                                {status}
+                            </span>
+                            <button 
+                                onClick={handleApply}
+                                className="bg-stone-800 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-stone-200 hover:bg-stone-700 transition-all"
+                            >
+                                <ArrowRight size={16}/> 轉換並套用
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="bg-amber-50 p-5 rounded-xl border border-amber-100">
+                         <h3 className="text-sm font-bold text-amber-800 mb-2 flex items-center gap-2"><FileText size={16}/> 格式提示</h3>
+                         <ul className="text-xs text-amber-700/80 space-y-1 list-disc pl-4">
+                            <li>必須包含 <strong>Day X</strong> 或 <strong>第X天</strong> 來區隔天數。</li>
+                            <li>每行行程建議包含時間 (如 <strong>10:00</strong>)，系統會自動抓取。</li>
+                            <li>系統會根據關鍵字 (吃、買、車...) 自動分配圖示。</li>
+                         </ul>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Sub Components (Updated Styles) ---
 
         const DayCard = ({ data, dayIdx, isEditing, updateDayInfo, addSchedule, updateSchedule, removeSchedule }) => {
             const iconMap = { Plane: <Plane size={16}/>, Car: <Car size={16}/>, MapPin: <MapPin size={16}/>, Hotel: <Hotel size={16}/>, Coffee: <Coffee size={16}/>, ShoppingBag: <ShoppingBag size={16}/>, Sun: <Sun size={16}/>, Moon: <Moon size={16}/>, Navigation: <Navigation size={16}/>, CheckSquare: <CheckSquare size={16}/> };
             
             return (
-                <div className="relative pl-4">
-                    {dayIdx !== 6 && <div className="absolute left-[23px] top-8 bottom-[-24px] w-px bg-stone-800"></div>}
-                    <div className={`relative bg-stone-900 rounded-xl border ${isEditing ? 'border-stone-700 border-dashed' : 'border-stone-800'} overflow-hidden transition-all`}>
-                        <div className="p-4 flex justify-between items-start border-b border-stone-800/50 bg-stone-900">
-                            <div className="flex gap-3">
-                                <div className={`flex flex-col items-center justify-center w-10 h-10 rounded bg-stone-800 border ${data.color.replace('border-', 'border-')} text-white`}>
-                                    <span className="text-[8px] font-bold text-stone-500">DAY</span>
-                                    <span className="text-lg font-bold leading-none">{dayIdx+1}</span>
+                <div className="relative pl-5">
+                    {dayIdx !== 6 && <div className="absolute left-[26px] top-10 bottom-[-32px] w-0.5 bg-stone-200"></div>}
+                    <div className={`relative bg-white rounded-2xl border ${isEditing ? 'border-stone-300 border-dashed' : 'border-stone-200'} overflow-hidden transition-all shadow-sm hover:shadow-md`}>
+                        <div className="p-5 flex justify-between items-start border-b border-stone-100 bg-white">
+                            <div className="flex gap-4">
+                                <div className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-white border-2 ${data.color} text-stone-700 shadow-sm`}>
+                                    <span className="text-[9px] font-bold text-stone-400 uppercase tracking-widest">DAY</span>
+                                    <span className="text-xl font-bold leading-none">{dayIdx+1}</span>
                                 </div>
                                 <div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold text-stone-200 text-sm">{data.date}</span>
-                                        {isEditing ? <input value={data.title} onChange={(e)=>updateDayInfo('title', e.target.value)} className="bg-black/20 border-b border-amber-900 w-24 text-xs text-amber-500"/> : <span className="text-xs text-amber-600 font-bold tracking-wide uppercase">{data.title}</span>}
+                                    <div className="flex items-center gap-3">
+                                        <span className="font-bold text-stone-800 text-lg">{data.date}</span>
+                                        {isEditing ? <input value={data.title} onChange={(e)=>updateDayInfo('title', e.target.value)} className="bg-stone-50 border-b border-amber-500 w-32 text-sm text-amber-600 font-bold p-1"/> : <span className="text-sm text-amber-600 font-bold tracking-wide uppercase bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100">{data.title}</span>}
                                     </div>
-                                    <div className="text-[10px] text-stone-500 mt-1 flex items-center gap-1"><Hotel size={10}/> {data.hotel}</div>
+                                    <div className="text-xs text-stone-400 mt-1.5 flex items-center gap-1.5 font-medium"><Hotel size={12}/> {data.hotel}</div>
                                 </div>
                             </div>
-                            {isEditing && <button onClick={addSchedule} className="text-xs bg-stone-800 text-stone-400 px-2 py-1 rounded flex items-center gap-1"><Plus size={12}/> Add</button>}
+                            {isEditing && <button onClick={addSchedule} className="text-xs bg-stone-100 text-stone-500 px-3 py-1.5 rounded-lg hover:bg-stone-200 font-bold flex items-center gap-1"><Plus size={14}/> Add</button>}
                         </div>
-                        <div className="p-4 space-y-4">
+                        <div className="p-5 space-y-5">
                             {data.schedule.map((item, schIdx) => (
-                                <div key={schIdx} className="flex gap-3 relative group">
-                                    <div className="text-[10px] font-mono text-amber-600/80 pt-0.5 w-8 shrink-0">
-                                        {isEditing ? <input value={item.time} onChange={(e)=>updateSchedule(schIdx, 'time', e.target.value)} className="bg-transparent w-full border-b border-stone-700 text-amber-600"/> : item.time}
+                                <div key={schIdx} className="flex gap-4 relative group">
+                                    <div className="text-xs font-mono font-bold text-stone-400 pt-0.5 w-10 shrink-0 text-right">
+                                        {isEditing ? <input value={item.time} onChange={(e)=>updateSchedule(schIdx, 'time', e.target.value)} className="bg-stone-50 w-full border-b border-stone-300 text-stone-600"/> : item.time}
                                     </div>
-                                    <div className="flex-1">
+                                    <div className="relative z-10">
+                                         <div className={`p-1.5 rounded-full bg-stone-50 border border-stone-200 text-stone-400`}>
+                                            {iconMap[item.iconType] || <MapPin size={14}/>}
+                                         </div>
+                                    </div>
+                                    <div className="flex-1 pt-0.5">
                                         {isEditing ? (
-                                            <div className="flex flex-col gap-1">
-                                                <input value={item.title} onChange={(e)=>updateSchedule(schIdx, 'title', e.target.value)} className="bg-transparent border-b border-stone-700 text-sm text-stone-200 w-full" placeholder="行程"/>
-                                                <input value={item.desc} onChange={(e)=>updateSchedule(schIdx, 'desc', e.target.value)} className="bg-transparent border-b border-stone-800 text-xs text-stone-500 w-full" placeholder="描述"/>
+                                            <div className="flex flex-col gap-2">
+                                                <input value={item.title} onChange={(e)=>updateSchedule(schIdx, 'title', e.target.value)} className="bg-stone-50 border-b border-stone-300 text-base font-bold text-stone-800 w-full p-1" placeholder="行程"/>
+                                                <input value={item.desc} onChange={(e)=>updateSchedule(schIdx, 'desc', e.target.value)} className="bg-stone-50 border-b border-stone-200 text-sm text-stone-500 w-full p-1" placeholder="描述"/>
                                             </div>
                                         ) : (
-                                            <><div className="text-sm font-medium text-stone-300">{item.title}</div><div className="text-[11px] text-stone-500 font-light">{item.desc}</div></>
+                                            <><div className="text-base font-bold text-stone-700">{item.title}</div><div className="text-sm text-stone-500 font-medium mt-0.5">{item.desc}</div></>
                                         )}
                                     </div>
-                                    {isEditing && <button onClick={()=>removeSchedule(schIdx)} className="text-stone-700 hover:text-red-500 self-start"><Trash2 size={14}/></button>}
+                                    {isEditing && <button onClick={()=>removeSchedule(schIdx)} className="text-stone-300 hover:text-red-500 self-start p-1"><Trash2 size={16}/></button>}
                                 </div>
                             ))}
                         </div>
@@ -452,48 +514,23 @@
 
             useEffect(() => {
                 if (!mapRef.current && mapContainerRef.current) {
-                    // 初始化地圖 (中心點：沖繩恩納村)
-                    mapRef.current = L.map(mapContainerRef.current, {
-                        zoomControl: false,
-                        attributionControl: false
-                    }).setView([26.48, 127.85], 10);
-
-                    // 使用 CartoDB Dark Matter 圖層 (最接近 Google Map Dark Mode)
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                        maxZoom: 19
-                    }).addTo(mapRef.current);
-                    
+                    mapRef.current = L.map(mapContainerRef.current, { zoomControl: false }).setView([26.48, 127.85], 10);
+                    // Light Mode Map Tiles (CartoDB Positron)
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(mapRef.current);
                     L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current);
                 }
 
-                // 繪製標記
                 const map = mapRef.current;
-                // 清除舊標記
-                map.eachLayer((layer) => {
-                    if (layer instanceof L.Marker || layer instanceof L.Polyline) {
-                        map.removeLayer(layer);
-                    }
-                });
+                map.eachLayer((layer) => { if (layer instanceof L.Marker || layer instanceof L.Polyline) map.removeLayer(layer); });
 
                 const points = [];
                 const latlngs = [];
 
                 itinerary.forEach((day) => {
                     day.schedule.forEach((item) => {
-                        // 關鍵字匹配座標
                         let coord = null;
-                        Object.keys(LOCATION_DB).forEach(key => {
-                            if (item.title.includes(key) || item.desc.includes(key)) {
-                                coord = LOCATION_DB[key];
-                            }
-                        });
-                        
-                        // 如果找不到，嘗試用飯店
-                        if(!coord && day.hotel) {
-                             Object.keys(LOCATION_DB).forEach(key => {
-                                if (day.hotel.includes(key)) coord = LOCATION_DB[key];
-                            });
-                        }
+                        Object.keys(LOCATION_DB).forEach(key => { if (item.title.includes(key) || item.desc.includes(key)) coord = LOCATION_DB[key]; });
+                        if(!coord && day.hotel) { Object.keys(LOCATION_DB).forEach(key => { if (day.hotel.includes(key)) coord = LOCATION_DB[key]; }); }
 
                         if (coord) {
                             points.push({ coord, title: item.title, day: day.day });
@@ -502,33 +539,23 @@
                     });
                 });
 
-                // 加入標記
                 points.forEach((pt) => {
-                    L.circleMarker(pt.coord, {
-                        radius: 6,
-                        fillColor: "#d97706",
-                        color: "#fff",
-                        weight: 1,
-                        opacity: 1,
-                        fillOpacity: 0.9
-                    }).addTo(map).bindPopup(`<b style="color:#333">Day ${pt.day}</b><br>${pt.title}`);
+                    L.circleMarker(pt.coord, { radius: 8, fillColor: "#d97706", color: "#fff", weight: 2, opacity: 1, fillOpacity: 1 }).addTo(map).bindPopup(`<b style="font-size:14px;">Day ${pt.day}</b><br>${pt.title}`);
                 });
 
-                // 繪製連線
                 if (latlngs.length > 1) {
-                    L.polyline(latlngs, { color: '#fbbf24', weight: 2, dashArray: '5, 10', opacity: 0.6 }).addTo(map);
+                    L.polyline(latlngs, { color: '#d97706', weight: 3, dashArray: '5, 10', opacity: 0.6 }).addTo(map);
                     map.fitBounds(L.polyline(latlngs).getBounds(), { padding: [50, 50] });
                 }
-
             }, [itinerary]);
 
-            return <div ref={mapContainerRef} className="w-full h-full bg-stone-900 relative z-0"></div>;
+            return <div ref={mapContainerRef} className="w-full h-full bg-stone-100 relative z-0"></div>;
         };
 
         const NavBtn = ({ icon, label, active, onClick }) => (
-            <button onClick={onClick} className={`flex flex-col items-center gap-1.5 transition-all group ${active ? 'text-amber-500' : 'text-stone-500 hover:text-stone-400'}`}>
-                <div className={`p-1 rounded-xl transition-all ${active ? 'bg-amber-900/20 scale-110' : ''}`}>{icon}</div>
-                <span className="text-[9px] font-bold tracking-widest">{label}</span>
+            <button onClick={onClick} className={`flex flex-col items-center gap-1.5 transition-all group ${active ? 'text-amber-600' : 'text-stone-400 hover:text-stone-600'}`}>
+                <div className={`p-1.5 rounded-xl transition-all duration-300 ${active ? 'bg-amber-50 scale-110 shadow-sm' : 'scale-100'}`}>{icon}</div>
+                <span className={`text-[10px] font-bold tracking-widest transition-colors ${active ? 'text-amber-700' : 'text-stone-400'}`}>{label}</span>
             </button>
         );
 
